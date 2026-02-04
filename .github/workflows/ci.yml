@@ -35,38 +35,57 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dev libxkbcommon-dev
 
-      - name: Download dependencies
-        shell: bash
+      - name: Download deps (Linux)
+        if: runner.os == 'Linux'
         run: |
           mkdir -p sdk
           for dep in mpf-sdk mpf-http-client mpf-ui-components; do
             curl -L -o ${dep}.tar.gz https://github.com/dyzdyz010/${dep}/releases/latest/download/${dep}-linux-x64.tar.gz 2>/dev/null || true
-            if [[ -f ${dep}.tar.gz ]]; then tar -xzf ${dep}.tar.gz -C sdk 2>/dev/null || true; fi
+            tar -xzf ${dep}.tar.gz -C sdk 2>/dev/null || true
           done
 
+      - name: Download deps (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path sdk
+          $deps = @("mpf-sdk", "mpf-http-client", "mpf-ui-components")
+          foreach ($dep in $deps) {
+            try {
+              Invoke-WebRequest -Uri "https://github.com/dyzdyz010/$dep/releases/latest/download/$dep-windows-x64.zip" -OutFile "$dep.zip"
+              Expand-Archive -Path "$dep.zip" -DestinationPath sdk -Force
+            } catch { Write-Host "$dep not available" }
+          }
+
       - name: Configure
-        shell: bash
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/sdk"
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=./sdk
 
       - name: Build
-        shell: bash
-        run: cmake --build build || echo "Build may fail on first run due to missing deps"
+        run: cmake --build build
+        continue-on-error: true
 
-      - name: Package
-        shell: bash
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
         run: |
           mkdir -p pkg/plugins pkg/qml
-          cp build/plugins/*.so pkg/plugins/ 2>/dev/null || cp build/plugins/*.dll pkg/plugins/ 2>/dev/null || true
+          cp build/plugins/*.so pkg/plugins/ 2>/dev/null || true
           cp -r build/qml/* pkg/qml/ 2>/dev/null || true
-          cd pkg && tar -czvf ../${{ matrix.artifact }}.tar.gz . 2>/dev/null || 7z a -tzip ../${{ matrix.artifact }}.zip .
+          cd pkg && tar -czvf ../${{ matrix.artifact }}.tar.gz .
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path pkg/plugins, pkg/qml
+          Copy-Item build/plugins/*.dll pkg/plugins/ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse build/qml/* pkg/qml/ -ErrorAction SilentlyContinue
+          cd pkg; 7z a -tzip ../${{ matrix.artifact }}.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: |
-            *.zip
-            *.tar.gz
+          path: ${{ matrix.artifact }}.*
 
   release:
     needs: build
