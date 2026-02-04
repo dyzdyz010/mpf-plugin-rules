@@ -141,7 +141,7 @@ void RulesPlugin::registerQmlTypes()
     qmlRegisterSingletonInstance("YourCo.Orders", 1, 0, "OrdersService", m_ordersService.get());
     
     // Register OrderModel
-    qmlRegisterType<OrderModel>("YourCo.Orders", 1, 0, "OrderModel");
+    qmlRegisterType<orders::OrderModel>("YourCo.Orders", 1, 0, "OrderModel");
     
     MPF_LOG_DEBUG("OrdersPlugin", "Registered QML types");
 }
