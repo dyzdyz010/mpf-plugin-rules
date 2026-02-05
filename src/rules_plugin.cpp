@@ -98,8 +98,9 @@ void RulesPlugin::registerRoutes()
 {
     auto* nav = m_registry->get<mpf::INavigation>();
     if (nav) {
-        nav->registerRoute("orders", "qrc:/YourCo/Orders/qml/OrdersPage.qml");
-        nav->registerRoute("orders/detail", "qrc:/YourCo/Orders/qml/OrderDetailPage.qml");
+        // Qt 6 qt_add_qml_module 默认资源前缀是 /qt/qml/
+        nav->registerRoute("rules", "qrc:/qt/qml/Biiz/Rules/RulesPage.qml");
+        nav->registerRoute("rules/detail", "qrc:/qt/qml/Biiz/Rules/RuleDetailPage.qml");
         MPF_LOG_DEBUG("OrdersPlugin", "Registered navigation routes");
     }
     
