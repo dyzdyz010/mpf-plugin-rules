@@ -33,20 +33,26 @@ target_link_libraries(rules-plugin PRIVATE
     MPF::foundation-sdk
 )
 
-# Set resource aliases to flatten directory structure
-set_source_files_properties(qml/OrdersPage.qml PROPERTIES QT_RESOURCE_ALIAS RulesPage.qml)
-set_source_files_properties(qml/OrderCard.qml PROPERTIES QT_RESOURCE_ALIAS RuleCard.qml)
-set_source_files_properties(qml/CreateOrderDialog.qml PROPERTIES QT_RESOURCE_ALIAS CreateRuleDialog.qml)
+# QML 文件 - 源文件 -> 输出别名 的映射
+# 注意：rules 插件复用了 orders 的 QML 文件，但输出名不同
+set(PLUGIN_QML_FILES qml/OrdersPage.qml qml/OrderCard.qml qml/CreateOrderDialog.qml)
+set(PLUGIN_QML_ALIASES RulesPage.qml RuleCard.qml CreateRuleDialog.qml)
+
+# 设置别名（支持源文件名和输出名不同）
+list(LENGTH PLUGIN_QML_FILES file_count)
+math(EXPR last_index "${file_count} - 1")
+foreach(i RANGE ${last_index})
+    list(GET PLUGIN_QML_FILES ${i} file)
+    list(GET PLUGIN_QML_ALIASES ${i} alias)
+    set_source_files_properties(${file} PROPERTIES QT_RESOURCE_ALIAS ${alias})
+endforeach()
 
 # QML module embedded in plugin
 qt_add_qml_module(rules-plugin
     URI Biiz.Rules
     VERSION 1.0
     RESOURCE_PREFIX /
-    QML_FILES
-        qml/OrdersPage.qml        # 主页面（详情用 Popup 显示）
-        qml/OrderCard.qml         # 列表项卡片
-        qml/CreateOrderDialog.qml # 创建对话框
+    QML_FILES ${PLUGIN_QML_FILES}
     OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/qml/Biiz/Rules
     NO_PLUGIN
     RESOURCES ui.qrc
