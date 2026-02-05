@@ -32,7 +32,7 @@ public:
   bool start() override;
   void stop() override;
   QJsonObject metadata() const override;
-  QString qmlModuleUri() const override { return "YourCo.Orders"; }
+  QString qmlModuleUri() const override { return "Biiz.Rules"; }
   QString entryQml() const override { return QString(); }
 
 private:

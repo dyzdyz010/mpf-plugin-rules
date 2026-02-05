@@ -23,7 +23,7 @@ bool RulesPlugin::initialize(mpf::ServiceRegistry* registry)
 {
     m_registry = registry;
     
-    MPF_LOG_INFO("OrdersPlugin", "Initializing...");
+    MPF_LOG_INFO("RulesPlugin", "Initializing...");
     
     // Create and register our service
     m_ordersService = std::make_unique<orders::OrdersService>(this);
@@ -31,66 +31,57 @@ bool RulesPlugin::initialize(mpf::ServiceRegistry* registry)
     // Register QML types
     registerQmlTypes();
     
-    MPF_LOG_INFO("OrdersPlugin", "Initialized successfully");
+    MPF_LOG_INFO("RulesPlugin", "Initialized successfully");
     return true;
 }
 
 bool RulesPlugin::start()
 {
-    MPF_LOG_INFO("OrdersPlugin", "Starting...");
+    MPF_LOG_INFO("RulesPlugin", "Starting...");
     
     // Register routes with navigation service
     registerRoutes();
     
     // Add some sample data for demo
     m_ordersService->createOrder({
-        {"customerName", "John Doe"},
-        {"productName", "Widget Pro"},
-        {"quantity", 2},
-        {"price", 99.99},
-        {"status", "pending"}
-    });
-    
-    m_ordersService->createOrder({
-        {"customerName", "Jane Smith"},
-        {"productName", "Gadget X"},
+        {"customerName", "Rule A"},
+        {"productName", "Validation Rule"},
         {"quantity", 1},
-        {"price", 149.99},
-        {"status", "processing"}
+        {"price", 0},
+        {"status", "active"}
     });
     
     m_ordersService->createOrder({
-        {"customerName", "Bob Wilson"},
-        {"productName", "Tool Kit"},
-        {"quantity", 3},
-        {"price", 49.99},
-        {"status", "shipped"}
+        {"customerName", "Rule B"},
+        {"productName", "Approval Rule"},
+        {"quantity", 1},
+        {"price", 0},
+        {"status", "active"}
     });
     
-    MPF_LOG_INFO("OrdersPlugin", "Started with sample orders");
+    MPF_LOG_INFO("RulesPlugin", "Started with sample rules");
     return true;
 }
 
 void RulesPlugin::stop()
 {
-    MPF_LOG_INFO("OrdersPlugin", "Stopping...");
+    MPF_LOG_INFO("RulesPlugin", "Stopping...");
 }
 
 QJsonObject RulesPlugin::metadata() const
 {
-    // This should match orders_plugin.json
     return QJsonDocument::fromJson(R"({
-        "id": "com.yourco.orders",
-        "name": "Orders Plugin",
+        "id": "com.biiz.rules",
+        "name": "Rules Plugin",
         "version": "1.0.0",
-        "description": "Order management functionality",
-        "vendor": "YourCo",
+        "description": "Business rules management",
+        "vendor": "Biiz",
         "requires": [
             {"type": "service", "id": "INavigation", "min": "1.0"}
         ],
-        "provides": ["OrdersService"],
-        "qmlModules": ["YourCo.Orders"],
-        "priority": 10
+        "provides": ["RulesService"],
+        "qmlModules": ["Biiz.Rules"],
+        "priority": 20
     })").object();
 }
 
@@ -109,43 +100,43 @@ void RulesPlugin::registerRoutes()
     auto* menu = m_registry->get<mpf::IMenu>();
     if (menu) {
         mpf::MenuItem item;
-        item.id = "orders";
-        item.label = tr("Orders");
-        item.icon = "📦";
-        item.route = "orders";
-        item.pluginId = "com.yourco.orders";
-        item.order = 10;
+        item.id = "rules";              // Changed from "orders"
+        item.label = tr("Rules");       // Changed from "Orders"
+        item.icon = "📋";               // Changed icon
+        item.route = "rules";           // Changed from "orders"
+        item.pluginId = "com.biiz.rules";
+        item.order = 20;
         item.group = "Business";
         
         bool registered = menu->registerItem(item);
         if (!registered) {
-            MPF_LOG_WARNING("OrdersPlugin", "Failed to register menu item");
+            MPF_LOG_WARNING("RulesPlugin", "Failed to register menu item");
             return;
         }
         
-        // Update badge with order count
-        menu->setBadge("orders", QString::number(m_ordersService->getOrderCount()));
+        // Update badge with rule count
+        menu->setBadge("rules", QString::number(m_ordersService->getOrderCount()));
         
-        // Connect to update badge when orders change
+        // Connect to update badge when rules change
         connect(m_ordersService.get(), &orders::OrdersService::ordersChanged, this, [this, menu]() {
-            menu->setBadge("orders", QString::number(m_ordersService->getOrderCount()));
+            menu->setBadge("rules", QString::number(m_ordersService->getOrderCount()));
         });
         
-        MPF_LOG_DEBUG("OrdersPlugin", "Registered menu item");
+        MPF_LOG_DEBUG("RulesPlugin", "Registered menu item");
     } else {
-        MPF_LOG_WARNING("OrdersPlugin", "Menu service not available");
+        MPF_LOG_WARNING("RulesPlugin", "Menu service not available");
     }
 }
 
 void RulesPlugin::registerQmlTypes()
 {
-    // Register OrdersService as singleton
-    qmlRegisterSingletonInstance("YourCo.Orders", 1, 0, "OrdersService", m_ordersService.get());
+    // Register service as singleton (using Biiz.Rules URI)
+    qmlRegisterSingletonInstance("Biiz.Rules", 1, 0, "RulesService", m_ordersService.get());
     
-    // Register OrderModel
-    qmlRegisterType<orders::OrderModel>("YourCo.Orders", 1, 0, "OrderModel");
+    // Register model
+    qmlRegisterType<orders::OrderModel>("Biiz.Rules", 1, 0, "RuleModel");
     
-    MPF_LOG_DEBUG("OrdersPlugin", "Registered QML types");
+    MPF_LOG_DEBUG("RulesPlugin", "Registered QML types");
 }
 
 } // namespace rules
