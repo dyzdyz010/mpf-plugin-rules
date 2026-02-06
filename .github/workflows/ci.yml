@@ -12,6 +12,10 @@ on:
         description: 'SDK version (empty=latest)'
         required: false
         default: ''
+      auto_release:
+        description: 'Auto bump version and release'
+        type: boolean
+        default: true
 
 env:
   QT_VERSION: '6.8.3'
@@ -126,6 +130,37 @@ jobs:
         with:
           name: mpf-plugin-${{ env.PLUGIN_NAME }}-${{ matrix.artifact_suffix }}
           path: mpf-plugin-${{ env.PLUGIN_NAME }}-${{ matrix.artifact_suffix }}.*
+
+  # Auto bump version when triggered by workflow_dispatch
+  auto-release:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.auto_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.DISPATCH_TOKEN }}
+
+      - name: Bump version and push tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${NEW_PATCH}"
+          echo "New tag: $NEW_TAG"
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$NEW_TAG" -m "Auto-release $NEW_TAG (triggered by upstream)"
+          git push origin "$NEW_TAG"
+          
+          echo "Pushed tag $NEW_TAG"
 
   release:
     needs: build
