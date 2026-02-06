@@ -33,6 +33,11 @@ target_link_libraries(rules-plugin PRIVATE
     MPF::foundation-sdk
 )
 
+# Static link CRT on MinGW to avoid cross-DLL heap issues
+if(MINGW)
+    target_link_options(rules-plugin PRIVATE -static-libgcc -static-libstdc++)
+endif()
+
 # QML 文件 - 源文件 -> 输出别名 的映射
 # 注意：rules 插件复用了 orders 的 QML 文件，但输出名不同
 set(PLUGIN_QML_FILES qml/OrdersPage.qml qml/OrderCard.qml qml/CreateOrderDialog.qml)
